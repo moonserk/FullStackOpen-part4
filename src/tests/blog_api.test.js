@@ -19,6 +19,7 @@ const initialBlogs = [
         likes: 2
     },
     {
+        title: 'TestFuck',
         author: 'Gregory 3',
         url: 'http://github.com',
         likes: 3
@@ -89,7 +90,7 @@ test('new blog correctly added', async () => {
 
 test('the likes property is missing from the request, it will default to the value 0', async () => {
     const newBlog = {
-        title: 'Test 4',
+        title: 'Test undefined likes',
         author: 'Gregory 4',
         url: 'http://github.com',
     }
@@ -104,6 +105,16 @@ test('the likes property is missing from the request, it will default to the val
     expect(res.body.likes).toBe(0)
 })
 
+test('if the title and url properties are missing from the request data, 400 Bad Request', async () => {
+    const newBlog = {
+        author: 'Gregory 4',
+    }
+    await api
+        .post('/api/blogs')
+        .send(newBlog)
+        .expect(400)
+
+})
 
 afterAll(() => {
     mongoose.connection.close()
