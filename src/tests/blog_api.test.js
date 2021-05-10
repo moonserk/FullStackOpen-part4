@@ -58,6 +58,14 @@ test('a specific blog is within the returned blogs', async () => {
     expect(autors).toContain('Gregory 2')
 })
 
+test('the unique identifier property of the blog posts is named id', async () => {
+    const res = await api.get('/api/blogs')
+    res.body.forEach(() => {
+        expect(res.body[0].id).toBeDefined()
+    })
+
+})
+
 test('new blog correctly added', async () => {
     const newBlog = {
         title: 'Test 4',
@@ -78,6 +86,8 @@ test('new blog correctly added', async () => {
     expect(titles).toContain('Test 4')
 
 })
+
+
 
 afterAll(() => {
     mongoose.connection.close()
