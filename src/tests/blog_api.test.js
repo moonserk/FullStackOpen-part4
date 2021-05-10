@@ -124,6 +124,19 @@ test('delete blog', async () => {
 
 })
 
+test('updated blog', async () => {
+    const updatedBlog ={
+        title: 'TestFuck',
+        author: 'Gregory 3',
+        url: 'http://github.com',
+        likes: 99999
+    }
+    const res = await api.get('/api/blogs')
+    const res2 = await api.put(`/api/blogs/${res.body[0].id}`).send(updatedBlog)
+    const res3 = await api.get('/api/blogs')
+    expect(res3.body[0].likes).toBe(99999)
+})
+
 afterAll(() => {
     mongoose.connection.close()
 })
