@@ -87,6 +87,22 @@ test('new blog correctly added', async () => {
 
 })
 
+test('the likes property is missing from the request, it will default to the value 0', async () => {
+    const newBlog = {
+        title: 'Test 4',
+        author: 'Gregory 4',
+        url: 'http://github.com',
+    }
+
+    const res = await api
+        .post('/api/blogs')
+        .send(newBlog)
+        .expect(201)
+        .expect('Content-Type', /application\/json/)
+
+    expect(res.body.likes).toBeDefined()
+    expect(res.body.likes).toBe(0)
+})
 
 
 afterAll(() => {
