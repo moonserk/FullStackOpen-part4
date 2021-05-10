@@ -116,6 +116,14 @@ test('if the title and url properties are missing from the request data, 400 Bad
 
 })
 
+test('delete blog', async () => {
+    const res = await api.get('/api/blogs')
+    const res2 = await api.delete(`/api/blogs/${res.body[0].id}`).expect(204)
+    const res3 = await api.get('/api/blogs')
+    expect(res3.body.map(m => m.id)).not.toContain(res.body[0].id)
+
+})
+
 afterAll(() => {
     mongoose.connection.close()
 })
