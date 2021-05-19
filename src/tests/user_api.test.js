@@ -62,9 +62,45 @@ describe('when there is initially one user in db', () => {
         expect(usersAtEnd).toHaveLength(usersAtStart.length)
     })
 
+    test('creation fails with proper statuscode and message if username < 3 characters long', async () => {
+        const usersAtStart = await helper.usersInDb()
+        const newUser = {
+            username: 'ro',
+            name: 'dumb',
+            password: 'qwertyy'
+        }
+        const result = await api
+            .post('/api/users')
+            .send(newUser)
+            .expect(400)
+            .expect('Content-Type', /application\/json/)
+
+        expect(result.body.error).toContain('is shorter than the minimum allowed length (3)')
+
+        const usersAtEnd = await helper.usersInDb()
+        expect(usersAtEnd).toHaveLength(usersAtStart.length)
+    })
+    test('creation fails with proper statuscode and message if password < 3 characters long', async () => {
+        const usersAtStart = await helper.usersInDb()
+        const newUser = {
+            username: 'root2',
+            name: 'dumb',
+            password: 'yy'
+        }
+        const result = await api
+            .post('/api/users')
+            .send(newUser)
+            .expect(400)
+            .expect('Content-Type', /application\/json/)
+
+        expect(result.body.error).toContain('Password must be min 3 characters long')
+
+        const usersAtEnd = await helper.usersInDb()
+        expect(usersAtEnd).toHaveLength(usersAtStart.length)
+    })
+
     afterAll(() => {
         mongoose.connection.close()
     })
-
 })
 
