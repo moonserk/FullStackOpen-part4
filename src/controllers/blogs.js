@@ -44,8 +44,20 @@ blogsRouter.post('/', async (request, response, next) => {
 blogsRouter.delete('/:id', async (request, response, next) => {
     try {
         const blogId = request.params.id
-        await Blog.findByIdAndRemove(blogId)
-        response.status(204).end()
+        const blog = await Blog.findById(blogId)
+        const decodedToken = jwt.verify(request.token, config.SECRET)
+        const userid = decodedToken.id
+
+        if(!request.token || !decodedToken.id){
+            return response.status(401).json({error: 'token missing or invalid'})
+        }
+
+        if(blog.user.toString() === userid.toString()){
+            await Blog.findByIdAndRemove(blogId)
+            response.status(204).end()
+        }else {
+            response.status(401).json({error: 'permisson denied'})
+        }
     } catch(error) {
         next(error)
     }
