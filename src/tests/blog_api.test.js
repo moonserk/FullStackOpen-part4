@@ -1,7 +1,9 @@
 const mongoose = require('mongoose')
 const supertest = require('supertest')
+const bcrypt = require('bcrypt')
 const app = require('../app')
 const Blog = require('../models/blog')
+const User = require('../models/user')
 
 const api = supertest(app)
 
@@ -28,12 +30,25 @@ const initialBlogs = [
 
 beforeEach(async () => {
     await Blog.deleteMany({})
+    await User.deleteMany({})
     let blogObj = new Blog(initialBlogs[0])
     await blogObj.save()
     blogObj = new Blog(initialBlogs[1])
     await blogObj.save()
     blogObj = new Blog(initialBlogs[2])
     await blogObj.save()
+
+    const saltRounds = 10
+    const passwordHash = await bcrypt.hash('root', saltRounds)
+
+    const user = new User({
+        username: 'testroot',
+        name: 'rootname',
+        passwordHash,
+    })
+
+    await user.save()
+
 })
 
 test('blogs are returned json', async () => {
@@ -75,8 +90,14 @@ test('new blog correctly added', async () => {
         likes: 4
     }
 
+    const token = await api.post('/api/login').send({
+        username: 'testroot',
+        password: 'root'
+    })
+
     await api
         .post('/api/blogs')
+        .set('Authorization', 'Bearer ' + token.body.token)
         .send(newBlog)
         .expect(201)
         .expect('Content-Type', /application\/json/)
@@ -88,6 +109,28 @@ test('new blog correctly added', async () => {
 
 })
 
+test('unauthorized while blog adding', async () => {
+    const newBlog = {
+        title: 'Test 4',
+        author: 'Gregory 4',
+        url: 'http://github.com',
+        likes: 4
+    }
+
+    const token = await api.post('/api/login').send({
+        username: 'testroot',
+        password: 'roott'
+    })
+
+    await api
+        .post('/api/blogs')
+        .set('Authorization', 'Bearer ' + token.body.token)
+        .send(newBlog)
+        .expect(401)
+        .expect('Content-Type', /application\/json/)
+
+})
+
 test('the likes property is missing from the request, it will default to the value 0', async () => {
     const newBlog = {
         title: 'Test undefined likes',
@@ -95,8 +138,14 @@ test('the likes property is missing from the request, it will default to the val
         url: 'http://github.com',
     }
 
+    const token = await api.post('/api/login').send({
+        username: 'testroot',
+        password: 'root'
+    })
+
     const res = await api
         .post('/api/blogs')
+        .set('Authorization', 'Bearer ' + token.body.token)
         .send(newBlog)
         .expect(201)
         .expect('Content-Type', /application\/json/)
@@ -109,18 +158,51 @@ test('if the title and url properties are missing from the request data, 400 Bad
     const newBlog = {
         author: 'Gregory 4',
     }
+
+    const token = await api.post('/api/login').send({
+        username: 'testroot',
+        password: 'root'
+    })
+
     await api
         .post('/api/blogs')
+        .set('Authorization', 'Bearer ' + token.body.token)
         .send(newBlog)
         .expect(400)
 
 })
 
 test('delete blog', async () => {
+
+    const newBlog = {
+        title: 'Test 5',
+        author: 'Gregory 4',
+        url: 'http://github.com',
+        likes: 4
+    }
+
+    const token = await api.post('/api/login').send({
+        username: 'testroot',
+        password: 'root'
+    })
+
+    await api
+        .post('/api/blogs')
+        .set('Authorization', 'Bearer ' + token.body.token)
+        .send(newBlog)
+        .expect(201)
+        .expect('Content-Type', /application\/json/)
+
     const res = await api.get('/api/blogs')
-    const res2 = await api.delete(`/api/blogs/${res.body[0].id}`).expect(204)
+
+    const blog = res.body.filter(n => n.title === 'Test 5')
+    await api
+        .delete(`/api/blogs/${blog[0].id}`)
+        .set('Authorization', 'Bearer ' + token.body.token)
+        .expect(204)
+
     const res3 = await api.get('/api/blogs')
-    expect(res3.body.map(m => m.id)).not.toContain(res.body[0].id)
+    expect(res3.body.map(m => m.id)).not.toContain(blog[0].id)
 
 })
 
@@ -131,8 +213,16 @@ test('updated blog', async () => {
         url: 'http://github.com',
         likes: 99999
     }
+    const token = await api.post('/api/login').send({
+        username: 'testroot',
+        password: 'root'
+    })
     const res = await api.get('/api/blogs')
-    const res2 = await api.put(`/api/blogs/${res.body[0].id}`).send(updatedBlog)
+    await api
+        .put(`/api/blogs/${res.body[0].id}`)
+        .set('Authorization', 'Bearer ' + token.body.token)
+        .send(updatedBlog)
+
     const res3 = await api.get('/api/blogs')
     expect(res3.body[0].likes).toBe(99999)
 })
